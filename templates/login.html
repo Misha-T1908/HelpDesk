@@ -1,0 +1,20 @@
+{% extends 'base.html' %}
+{% block content %}
+<section class="login-card">
+    <h1>Вхід до системи</h1>
+    <p class="muted">Система обліку заявок користувачів до IT-відділу.</p>
+    <form method="post" class="form">
+        <label>Email</label>
+        <input type="email" name="email" value="admin@example.com" required>
+        <label>Пароль</label>
+        <input type="password" name="password" value="admin123" required>
+        <button type="submit">Увійти</button>
+    </form>
+    <div class="demo-box">
+        <strong>Тестові акаунти:</strong><br>
+        Адмін: admin@example.com / admin123<br>
+        Користувач: user@example.com / user123<br>
+        IT-спеціаліст: tech@example.com / tech123
+    </div>
+</section>
+{% endblock %}
