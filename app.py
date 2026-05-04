@@ -10,7 +10,7 @@ import click
 import os
 
 BASE_DIR = Path(__file__).resolve().parent
-DB_PATH = BASE_DIR / 'helpdesk_pro.db'
+DB_PATH = Path(os.environ.get('SQLITE_PATH') or ('/tmp/helpdesk_pro.db' if os.environ.get('VERCEL') else BASE_DIR / 'helpdesk_pro.db'))
 
 app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', 'change-this-secret-key-for-production')
