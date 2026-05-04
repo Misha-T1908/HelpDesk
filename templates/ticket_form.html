@@ -1,0 +1,75 @@
+{% extends 'base.html' %}
+{% block content %}
+<section class="panel form-panel">
+    <div class="form-heading">
+        <div>
+            <h1>Нова заявка</h1>
+            <p class="muted">Опишіть проблему коротко. Службові поля IT-спеціаліст заповнить під час обробки.</p>
+        </div>
+        <a class="button secondary" href="{{ url_for('dashboard') }}">Назад</a>
+    </div>
+
+    <form method="post" class="form simple-ticket-form">
+        <div>
+            <label>Назва проблеми *</label>
+            <input name="title" placeholder="Наприклад: Не працює Wi-Fi у кабінеті 305" required>
+        </div>
+
+        <div class="form-row">
+            <div>
+                <label>Категорія</label>
+                <select name="category">
+                    {% for c in categories %}<option>{{ c }}</option>{% endfor %}
+                </select>
+            </div>
+            <div>
+                <label>Пріоритет</label>
+                <select name="priority">
+                    {% for p in priorities %}<option {% if p == 'Середній' %}selected{% endif %}>{{ p }}</option>{% endfor %}
+                </select>
+            </div>
+        </div>
+
+        <div>
+            <label>Місце виникнення проблеми *</label>
+            <input name="location" placeholder="Кабінет, аудиторія, поверх або віддалено" required>
+        </div>
+
+        <div>
+            <label>Детальний опис *</label>
+            <textarea name="description" rows="7" placeholder="Що сталося, коли почалося, кому заважає працювати, чи є текст помилки" required></textarea>
+        </div>
+
+        <details class="optional-fields">
+            <summary>Додаткові дані заявника і пристрою</summary>
+            <div class="optional-grid">
+                <div>
+                    <label>ПІБ заявника *</label>
+                    <input name="requester_name" value="{{ session.full_name }}" required>
+                </div>
+                <div>
+                    <label>Email</label>
+                    <input name="requester_email" type="email" value="{{ session.email }}">
+                </div>
+                <div>
+                    <label>Телефон</label>
+                    <input name="requester_phone" placeholder="+380...">
+                </div>
+                <div>
+                    <label>Підрозділ / група</label>
+                    <input name="department" placeholder="Наприклад: КН-32Ф">
+                </div>
+                <div>
+                    <label>Пристрій або інвентарний номер</label>
+                    <input name="inventory_number" placeholder="PC-305-01, PRN-02">
+                </div>
+            </div>
+        </details>
+
+        <div class="form-actions">
+            <button type="submit">Надіслати заявку</button>
+            <a class="button secondary" href="{{ url_for('dashboard') }}">Скасувати</a>
+        </div>
+    </form>
+</section>
+{% endblock %}
