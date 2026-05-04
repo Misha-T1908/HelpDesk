@@ -8,9 +8,12 @@ import csv
 import io
 import click
 import os
+import threading
 
 BASE_DIR = Path(__file__).resolve().parent
 DB_PATH = Path(os.environ.get('SQLITE_PATH') or ('/tmp/helpdesk_pro.db' if os.environ.get('VERCEL') else BASE_DIR / 'helpdesk_pro.db'))
+DB_INIT_LOCK = threading.Lock()
+DB_INITIALIZED = False
 
 app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', 'change-this-secret-key-for-production')
@@ -32,12 +35,26 @@ def parse_optional_int(value):
 
 
 def get_db():
-    conn = sqlite3.connect(DB_PATH)
+    conn = sqlite3.connect(DB_PATH, timeout=30)
+    conn.execute('PRAGMA busy_timeout = 30000')
     conn.row_factory = sqlite3.Row
     return conn
 
 
 def init_db():
+    global DB_INITIALIZED
+    if DB_INITIALIZED and DB_PATH.exists():
+        return
+
+    with DB_INIT_LOCK:
+        if DB_INITIALIZED and DB_PATH.exists():
+            return
+
+        init_db_unlocked()
+        DB_INITIALIZED = True
+
+
+def init_db_unlocked():
     conn = get_db()
     cur = conn.cursor()
     cur.execute('''
@@ -103,11 +120,21 @@ def init_db():
             ('Користувач практики', 'user@example.com', generate_password_hash('user123'), 'user', now),
             ('IT-спеціаліст', 'tech@example.com', generate_password_hash('tech123'), 'admin', now),
         ]
-        cur.executemany('INSERT INTO users(full_name, email, password_hash, role, created_at) VALUES (?, ?, ?, ?, ?)', users)
+        cur.executemany('''
+            INSERT OR IGNORE INTO users(full_name, email, password_hash, role, created_at)
+            VALUES (?, ?, ?, ?, ?)
+        ''', users)
+
+    cur.execute('SELECT COUNT(*) AS count FROM tickets')
+    if cur.fetchone()['count'] == 0:
+        now = datetime.now().strftime('%Y-%m-%d %H:%M')
+        admin_id = cur.execute('SELECT id FROM users WHERE email = ?', ('admin@example.com',)).fetchone()['id']
+        user_id = cur.execute('SELECT id FROM users WHERE email = ?', ('user@example.com',)).fetchone()['id']
+        tech_id = cur.execute('SELECT id FROM users WHERE email = ?', ('tech@example.com',)).fetchone()['id']
         sample_tickets = [
-            ('Не працює Wi-Fi у кабінеті', 'Користувачі не можуть підключитися до бездротової мережі у навчальній аудиторії.', 'Мережа', 'Високий', 'В роботі', 2, 1, now, now, 'Користувач практики', 'user@example.com', '+380000000000', 'Навчальний відділ', 'Кабінет 305', 'AP-305'),
-            ('Потрібно встановити офісний пакет', 'На новому комп’ютері відсутнє програмне забезпечення для роботи з документами.', 'Програмне забезпечення', 'Середній', 'Нова', 2, None, now, now, 'Користувач практики', 'user@example.com', '+380000000000', 'Бібліотека', 'Кабінет 112', 'PC-112-04'),
-            ('Заблоковано обліковий запис', 'Користувач не може увійти до внутрішньої інформаційної системи.', 'Доступи', 'Критичний', 'Очікує користувача', 2, 3, now, now, 'Користувач практики', 'user@example.com', '+380000000000', 'Деканат', 'Кабінет 201', ''),
+            ('Не працює Wi-Fi у кабінеті', 'Користувачі не можуть підключитися до бездротової мережі у навчальній аудиторії.', 'Мережа', 'Високий', 'В роботі', user_id, admin_id, now, now, 'Користувач практики', 'user@example.com', '+380000000000', 'Навчальний відділ', 'Кабінет 305', 'AP-305'),
+            ('Потрібно встановити офісний пакет', 'На новому комп’ютері відсутнє програмне забезпечення для роботи з документами.', 'Програмне забезпечення', 'Середній', 'Нова', user_id, None, now, now, 'Користувач практики', 'user@example.com', '+380000000000', 'Бібліотека', 'Кабінет 112', 'PC-112-04'),
+            ('Заблоковано обліковий запис', 'Користувач не може увійти до внутрішньої інформаційної системи.', 'Доступи', 'Критичний', 'Очікує користувача', user_id, tech_id, now, now, 'Користувач практики', 'user@example.com', '+380000000000', 'Деканат', 'Кабінет 201', ''),
         ]
         cur.executemany('''
             INSERT INTO tickets(title, description, category, priority, status, created_by, assigned_to, created_at, updated_at,
@@ -119,8 +146,10 @@ def init_db():
 
 
 def recreate_db():
+    global DB_INITIALIZED
     if DB_PATH.exists():
         DB_PATH.unlink()
+    DB_INITIALIZED = False
     init_db()
 
 
@@ -144,6 +173,8 @@ def reset_db_command(yes):
 
 @app.before_request
 def ensure_db():
+    if request.endpoint == 'static' or request.path in ('/favicon.ico', '/favicon.png'):
+        return
     init_db()
 
 
