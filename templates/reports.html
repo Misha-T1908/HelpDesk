@@ -1,0 +1,14 @@
+{% extends 'base.html' %}
+{% block content %}
+<h1>Аналітичні звіти</h1>
+<p class="muted">Дані можна використати в аналітичній довідці та звіті з практики.</p>
+<div class="cards">
+    <div class="card"><span>Усього заявок</span><strong>{{ total }}</strong></div>
+</div>
+<div class="report-grid">
+    <div class="panel"><h2>За статусами</h2>{% for r in by_status %}<div class="bar-row"><span>{{ r.status }}</span><b>{{ r.count }}</b></div>{% endfor %}</div>
+    <div class="panel"><h2>За пріоритетами</h2>{% for r in by_priority %}<div class="bar-row"><span>{{ r.priority }}</span><b>{{ r.count }}</b></div>{% endfor %}</div>
+    <div class="panel"><h2>За категоріями</h2>{% for r in by_category %}<div class="bar-row"><span>{{ r.category }}</span><b>{{ r.count }}</b></div>{% endfor %}</div>
+    <div class="panel"><h2>За виконавцями</h2>{% for r in by_assignee %}<div class="bar-row"><span>{{ r.assignee_name }}</span><b>{{ r.count }}</b></div>{% endfor %}</div>
+</div>
+{% endblock %}
