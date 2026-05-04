@@ -1,0 +1,68 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="page-head">
+    <div>
+        <h1>Заявки IT-служби</h1>
+        <p class="muted">Користувач: {{ session.full_name }} · Роль: {{ 'адміністратор' if session.role == 'admin' else 'користувач' }}</p>
+    </div>
+    <a class="button" href="{{ url_for('new_ticket') }}">Створити заявку</a>
+</div>
+
+<div class="cards dashboard-cards">
+    <div class="card"><span>Усього</span><strong>{{ total }}</strong></div>
+    <div class="card"><span>Критичних</span><strong>{{ critical }}</strong></div>
+    {% for item in stats %}
+    <div class="card"><span>{{ item.status }}</span><strong>{{ item.count }}</strong></div>
+    {% endfor %}
+</div>
+
+<form class="filters" method="get">
+    <input name="q" value="{{ active_filters.q }}" placeholder="Пошук за назвою, заявником, місцем або пристроєм">
+    <select name="status">
+        <option value="">Усі статуси</option>
+        {% for status in statuses %}
+        <option value="{{ status }}" {% if active_filters.status == status %}selected{% endif %}>{{ status }}</option>
+        {% endfor %}
+    </select>
+    <select name="priority">
+        <option value="">Усі пріоритети</option>
+        {% for priority in priorities %}
+        <option value="{{ priority }}" {% if active_filters.priority == priority %}selected{% endif %}>{{ priority }}</option>
+        {% endfor %}
+    </select>
+    <button type="submit">Знайти</button>
+    <a class="button secondary" href="{{ url_for('dashboard') }}">Скинути</a>
+</form>
+
+<section class="ticket-list">
+    {% for ticket in tickets %}
+    <article class="ticket-row">
+        <div class="ticket-main">
+            <div class="ticket-topline">
+                <span class="ticket-id">#{{ ticket.id }}</span>
+                <span class="badge">{{ ticket.status }}</span>
+                <span class="badge priority-{{ ticket.priority|lower }}">{{ ticket.priority }}</span>
+            </div>
+            <h2><a href="{{ url_for('ticket_detail', ticket_id=ticket.id) }}">{{ ticket.title }}</a></h2>
+            <p class="muted">{{ ticket.description|truncate(150) }}</p>
+            <div class="ticket-facts">
+                <span>Заявник: <b>{{ ticket.requester_name or ticket.author_name }}</b></span>
+                <span>Місце: <b>{{ ticket.location or '—' }}</b></span>
+                <span>Категорія: <b>{{ ticket.category }}</b></span>
+            </div>
+        </div>
+        <aside class="ticket-side">
+            <span>Виконавець</span>
+            <strong>{{ ticket.assignee_name or 'Не призначено' }}</strong>
+            <span>Оновлено</span>
+            <strong>{{ ticket.updated_at }}</strong>
+        </aside>
+    </article>
+    {% else %}
+    <div class="empty-state">
+        <h2>Заявок не знайдено</h2>
+        <p class="muted">Спробуйте змінити фільтри або створити нову заявку.</p>
+    </div>
+    {% endfor %}
+</section>
+{% endblock %}
