@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="uk">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>HelpDesk Pro</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+<header class="topbar">
+    <div class="brand">HelpDesk <span>Pro</span></div>
+    {% if session.get('user_id') %}
+    <nav>
+        <a href="{{ url_for('dashboard') }}">Панель</a>
+        <a href="{{ url_for('new_ticket') }}">Нова заявка</a>
+        {% if session.get('role') == 'admin' %}
+            <a href="{{ url_for('reports') }}">Звіти</a>
+            <a href="{{ url_for('export_csv') }}">CSV</a>
+        {% endif %}
+        <a href="{{ url_for('logout') }}">Вийти</a>
+    </nav>
+    {% endif %}
+</header>
+<main class="container">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <div class="messages">
+            {% for category, message in messages %}
+                <div class="alert {{ category }}">{{ message }}</div>
+            {% endfor %}
+            </div>
+        {% endif %}
+    {% endwith %}
+    {% block content %}{% endblock %}
+</main>
+</body>
+</html>
